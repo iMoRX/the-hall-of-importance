@@ -263,6 +263,23 @@ export default function App() {
     setEditorOpen(true);
   };
 
+  const handlePasteNewNote = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setEditorNote(null);
+        setEditorInitialBody(text);
+        setEditorInitialFiles([]);
+        setEditorOpen(true);
+      } else {
+        alert("Clipboard is empty or does not contain text.");
+      }
+    } catch (err) {
+      console.error("Failed to read clipboard: ", err);
+      alert("Failed to read clipboard. You may need to grant permission.");
+    }
+  };
+
   const handleSaveNote = async (noteData, existingId) => {
     if (existingId) {
       await updateNote(existingId, noteData);
@@ -459,7 +476,7 @@ export default function App() {
 
       {/* Floating Action Button */}
       {activeSpaceId !== 'trash' && (
-        <QuickCapture onClick={handleNewNote} />
+        <QuickCapture onClick={handleNewNote} onPasteClick={handlePasteNewNote} />
       )}
 
       {/* Note Editor Modal */}
