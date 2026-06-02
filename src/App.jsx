@@ -49,6 +49,24 @@ export default function App() {
 
   const { session } = useAuth();
 
+  // --- iOS Shortcut / URL parameter support ---
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sharedText = params.get('text');
+    const sharedTitle = params.get('title');
+    
+    if (sharedText || sharedTitle) {
+      setEditorOpen(true);
+      setEditorNote(null);
+      // Combine title and text if both exist, or use whichever is present
+      const body = [sharedTitle, sharedText].filter(Boolean).join('\n\n');
+      setEditorInitialBody(body);
+      
+      // Clear the URL so it doesn't trigger again on refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   // --- Global drag & drop ---
   useEffect(() => {
     const handleDragEnter = (e) => {
