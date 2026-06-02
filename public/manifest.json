@@ -1,0 +1,16 @@
+{
+  "name": "The Hall of Importance",
+  "short_name": "Hall",
+  "description": "Your minimalistic personal knowledge vault",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121420",
+  "theme_color": "#121420",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

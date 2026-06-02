@@ -1,0 +1,29 @@
+{
+  "name": "the-hall-of-importance",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "vite": "^8.0.12"
+  },
+  "dependencies": {
+    "@tiptap/extension-link": "^3.24.0",
+    "@tiptap/extension-placeholder": "^3.24.0",
+    "@tiptap/extension-underline": "^3.24.0",
+    "@tiptap/pm": "^3.24.0",
+    "@tiptap/react": "^3.24.0",
+    "@tiptap/starter-kit": "^3.24.0",
+    "@vitejs/plugin-react": "^6.0.2",
+    "dexie": "^4.4.3",
+    "dexie-react-hooks": "^4.4.0",
+    "lucide-react": "^1.17.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  }
+}
