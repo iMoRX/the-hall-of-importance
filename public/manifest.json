@@ -4,13 +4,13 @@
   "description": "Your minimalistic personal knowledge vault",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#121420",
-  "theme_color": "#121420",
+  "background_color": "#fdfcfb",
+  "theme_color": "#fdfcfb",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
     }
   ]
 }

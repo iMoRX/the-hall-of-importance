@@ -69,6 +69,9 @@ export function useNotes(spaceId = null, { includeDeleted = false } = {}) {
     if (!error) {
       triggerNotesRefetch();
       return data.id;
+    } else {
+      console.error('Failed to add note:', error);
+      alert('Error adding note: ' + (error?.message || 'Unknown error'));
     }
     return null;
   }

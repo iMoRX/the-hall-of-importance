@@ -42,6 +42,9 @@ export function useSpaces() {
     if (!error && data) {
       setSpaces(prev => [...prev, data]);
       return data;
+    } else {
+      console.error('Failed to add space:', error);
+      alert('Error adding space: ' + (error?.message || 'Unknown error'));
     }
   }
 
