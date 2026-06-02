@@ -372,16 +372,6 @@ export default function App() {
               onClear={clearSearch}
               inputRef={searchRef}
             />
-            <button
-              className="btn btn--secondary btn--sm"
-              style={{ marginLeft: 'var(--space-2)' }}
-              onClick={async () => {
-                const { supabase } = await import('./lib/supabase');
-                await supabase.auth.signOut();
-              }}
-            >
-              Log Out
-            </button>
           </div>
         </div>
 

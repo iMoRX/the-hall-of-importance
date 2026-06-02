@@ -1557,3 +1557,15 @@ h1, h2, h3, h4, h5, h6,
   text-decoration: underline;
 }
 
+
+@media (max-width: 480px) {
+  .auth-container {
+    padding: var(--space-5);
+    border: none;
+    box-shadow: none;
+    background: transparent;
+  }
+  .auth-wrapper {
+    padding: var(--space-3);
+  }
+}
