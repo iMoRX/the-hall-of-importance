@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Menu } from 'lucide-react';
-import { seedDefaults, deduplicateSpaces } from './db/database';
-import db from './db/database';
+import { supabase } from './lib/supabase';
+import { useAuth } from './components/AuthProvider';
 import { useNotes, useAllTags, useNoteCounts } from './hooks/useNotes';
 import { useSpaces } from './hooks/useSpaces';
 import { useSearch } from './hooks/useSearch';
@@ -47,14 +47,7 @@ export default function App() {
   const { query, results, search, clearSearch, searchRef } = useSearch();
   const { expiringSoon, expiringSoonCount } = useExpiryCheck();
 
-  // --- Seed defaults on mount + deduplicate ---
-  useEffect(() => {
-    async function init() {
-      await seedDefaults();
-      await deduplicateSpaces();
-    }
-    init();
-  }, []);
+  const { session } = useAuth();
 
   // --- Global drag & drop ---
   useEffect(() => {
@@ -203,15 +196,23 @@ export default function App() {
   const [fileCountMap, setFileCountMap] = useState({});
   useEffect(() => {
     async function loadFileCounts() {
-      const allFiles = await db.files.toArray();
+      if (!session?.user?.id || !displayedNotes.length) return;
       const counts = {};
-      allFiles.forEach((f) => {
-        counts[f.noteId] = (counts[f.noteId] || 0) + 1;
-      });
+      
+      // Batch fetch file lists for displayed notes
+      await Promise.all(
+        displayedNotes.map(async (note) => {
+          const { data } = await supabase.storage.from('files').list(`${session.user.id}/${note.id}`);
+          if (data) {
+            const validFiles = data.filter(f => f.name !== '.emptyFolderPlaceholder');
+            counts[note.id] = validFiles.length;
+          }
+        })
+      );
       setFileCountMap(counts);
     }
     loadFileCounts();
-  }, [displayedNotes]);
+  }, [displayedNotes, session?.user?.id]);
 
   const enrichedNotes = displayedNotes.map((n) => ({
     ...n,
@@ -371,6 +372,16 @@ export default function App() {
               onClear={clearSearch}
               inputRef={searchRef}
             />
+            <button
+              className="btn btn--secondary btn--sm"
+              style={{ marginLeft: 'var(--space-2)' }}
+              onClick={async () => {
+                const { supabase } = await import('./lib/supabase');
+                await supabase.auth.signOut();
+              }}
+            >
+              Log Out
+            </button>
           </div>
         </div>
 

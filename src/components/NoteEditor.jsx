@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import { EXPIRY_PRESETS, ACCEPTED_FILE_TYPES, MAX_FILE_SIZE } from '../utils/constants';
 import { getExpiryDate, formatDateForInput, parseTags, formatFileSize, getFileTypeCategory } from '../utils/helpers';
-import db from '../db/database';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthProvider';
 
 /**
  * Note editor modal with TipTap rich text, file uploads, tags, and expiry.
@@ -28,6 +29,7 @@ export default function NoteEditor({
   onClose,
 }) {
   const isEditing = !!note;
+  const { session } = useAuth();
 
   const [title, setTitle] = useState(note?.title || '');
   const [spaceId, setSpaceId] = useState(note?.spaceId || defaultSpaceId || spaces[0]?.id);
@@ -42,14 +44,25 @@ export default function NoteEditor({
 
   // Load existing files if editing
   useEffect(() => {
-    if (note?.id) {
-      db.files
-        .where('noteId')
-        .equals(note.id)
-        .toArray()
-        .then(setExistingFiles);
+    async function loadFiles() {
+      if (note?.id && session?.user?.id) {
+        const { data, error } = await supabase.storage
+          .from('files')
+          .list(`${session.user.id}/${note.id}`);
+        if (!error && data) {
+          // Format storage objects to match expected file structure
+          const formatted = data.map(f => ({
+            id: f.name, // using name as id since it's unique per folder
+            name: f.name,
+            type: f.metadata?.mimetype || '',
+            size: f.metadata?.size || 0
+          })).filter(f => f.name !== '.emptyFolderPlaceholder');
+          setExistingFiles(formatted);
+        }
+      }
     }
-  }, [note?.id]);
+    loadFiles();
+  }, [note?.id, session?.user?.id]);
 
   // Determine initial expiry preset
   useEffect(() => {
@@ -112,23 +125,19 @@ export default function NoteEditor({
     const savedNoteId = noteId || note?.id;
 
     // Handle file uploads for the saved note
-    if (savedNoteId) {
+    if (savedNoteId && session?.user?.id) {
       // Remove files
-      for (const fileId of removedFileIds) {
-        await db.files.delete(fileId);
+      for (const fileName of removedFileIds) {
+        await supabase.storage.from('files').remove([`${session.user.id}/${savedNoteId}/${fileName}`]);
       }
 
       // Add new files
       for (const file of files) {
-        const arrayBuffer = await file.arrayBuffer();
-        await db.files.add({
-          noteId: savedNoteId,
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          data: arrayBuffer,
-          createdAt: new Date().toISOString(),
-        });
+        await supabase.storage.from('files').upload(
+          `${session.user.id}/${savedNoteId}/${file.name}`,
+          file,
+          { upsert: true }
+        );
       }
     }
 

@@ -1,12 +1,10 @@
 import { useState, useCallback, useRef } from 'react';
-import db from '../db/database';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../components/AuthProvider';
 import { stripHtml, debounce } from '../utils/helpers';
 
-/**
- * Hook for searching notes across title, body, and tags.
- * Supports scoping to a specific space.
- */
 export function useSearch() {
+  const { session } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -15,7 +13,7 @@ export function useSearch() {
 
   const performSearch = useCallback(
     debounce(async (searchQuery, spaceId) => {
-      if (!searchQuery || searchQuery.trim().length === 0) {
+      if (!session?.user?.id || !searchQuery || searchQuery.trim().length === 0) {
         setResults(null);
         setIsSearching(false);
         return;
@@ -25,16 +23,17 @@ export function useSearch() {
       const q = searchQuery.toLowerCase().trim();
 
       try {
-        let notes;
+        let queryBuilder = supabase.from('notes').select('*').eq('is_deleted', false);
         if (spaceId) {
-          notes = await db.notes.where('spaceId').equals(spaceId).toArray();
-        } else {
-          notes = await db.notes.toArray();
+          queryBuilder = queryBuilder.eq('space_id', spaceId);
         }
 
-        const active = notes.filter((n) => !n.isDeleted);
+        const { data, error } = await queryBuilder;
+        
+        if (error) throw error;
 
-        const matched = active.filter((note) => {
+        // Filter client-side to easily support tags arrays and HTML stripping
+        const matched = data.filter((note) => {
           const titleMatch = note.title?.toLowerCase().includes(q);
           const bodyMatch = stripHtml(note.body)?.toLowerCase().includes(q);
           const tagMatch = note.tags?.some((t) => t.toLowerCase().includes(q));
@@ -43,12 +42,20 @@ export function useSearch() {
 
         // Sort: pinned first, then most recent
         matched.sort((a, b) => {
-          if (a.isPinned && !b.isPinned) return -1;
-          if (!a.isPinned && b.isPinned) return 1;
-          return new Date(b.updatedAt) - new Date(a.updatedAt);
+          if (a.is_pinned && !b.is_pinned) return -1;
+          if (!a.is_pinned && b.is_pinned) return 1;
+          return new Date(b.updated_at) - new Date(a.updated_at);
         });
 
-        setResults(matched);
+        setResults(matched.map(n => ({
+          ...n,
+          spaceId: n.space_id,
+          isPinned: n.is_pinned,
+          isDeleted: n.is_deleted,
+          expiresAt: n.expires_at,
+          createdAt: n.created_at,
+          updatedAt: n.updated_at
+        })));
       } catch (err) {
         console.error('Search error:', err);
         setResults([]);
@@ -56,7 +63,7 @@ export function useSearch() {
         setIsSearching(false);
       }
     }, 200),
-    []
+    [session?.user?.id]
   );
 
   const search = useCallback(
