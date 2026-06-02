@@ -40,10 +40,9 @@ export default function Auth({ onLogin }) {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-box">
+    <div className="auth-wrapper">
+      <div className="auth-container">
         <div className="auth-header">
-          <div className="auth-logo">H</div>
           <h1 className="auth-title">The Hall of Importance</h1>
           <p className="auth-subtitle">
             {isSignUp ? 'Create a new account' : 'Log in to your vault'}
@@ -51,10 +50,10 @@ export default function Auth({ onLogin }) {
         </div>
 
         <form onSubmit={handleAuth} className="auth-form">
-          {error && <div className="auth-error">{error}</div>}
+          {error && <div className="auth-error" style={{ color: 'var(--danger)', fontSize: 'var(--font-sm)' }}>{error}</div>}
           
-          <div className="field">
-            <label className="field__label">Email</label>
+          <div className="auth-input-group">
+            <label>Email Address</label>
             <input
               type="email"
               value={email}
@@ -64,8 +63,8 @@ export default function Auth({ onLogin }) {
             />
           </div>
 
-          <div className="field">
-            <label className="field__label">Password</label>
+          <div className="auth-input-group">
+            <label>Password</label>
             <input
               type="password"
               value={password}
@@ -77,23 +76,22 @@ export default function Auth({ onLogin }) {
 
           <button
             type="submit"
-            className="btn btn--primary auth-submit"
+            className="auth-submit-btn"
             disabled={loading}
-            style={{ width: '100%', marginTop: 'var(--space-2)' }}
           >
-            {loading ? 'Processing…' : (isSignUp ? 'Sign Up' : 'Log In')}
+            {loading ? 'Processing…' : (isSignUp ? 'Sign Up' : 'Sign In to The Hall')}
           </button>
         </form>
 
-        <div className="auth-footer">
+        <div className="auth-toggle">
+          {isSignUp ? 'Already have an account?' : "Don't have an account?"}
           <button
-            className="btn btn--ghost"
             onClick={() => {
               setIsSignUp(!isSignUp);
               setError(null);
             }}
           >
-            {isSignUp ? 'Already have an account? Log In' : 'Need an account? Sign Up'}
+            {isSignUp ? 'Log In' : 'Request Access'}
           </button>
         </div>
       </div>

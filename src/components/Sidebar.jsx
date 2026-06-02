@@ -39,7 +39,7 @@ export default function Sidebar({
             <div
               className="sidebar__logo"
               style={{
-                background: 'linear-gradient(135deg, var(--accent), var(--accent-hover))',
+                background: 'var(--accent)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
