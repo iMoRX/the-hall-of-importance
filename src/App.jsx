@@ -343,14 +343,29 @@ export default function App() {
 
       for (const clipboardItem of clipboardItems) {
         for (const type of clipboardItem.types) {
-          if (type.startsWith('image/')) {
-            const blob = await clipboardItem.getType(type);
-            const ext = type.split('/')[1] || 'png';
-            const file = new File([blob], `pasted_image_${Date.now()}.${ext}`, { type });
-            files.push(file);
-          } else if (type === 'text/plain') {
+          if (type === 'text/plain') {
             const blob = await clipboardItem.getType(type);
             text += await blob.text() + '\n';
+          } else if (type === 'text/html') {
+            // Capture rich text as HTML body
+            const blob = await clipboardItem.getType(type);
+            const html = await blob.text();
+            if (html) text = html;
+          } else {
+            // Treat any other type (image/*, video/*, audio/*, application/pdf, etc.) as a file
+            try {
+              const blob = await clipboardItem.getType(type);
+              const ext = type.split('/')[1]?.split(';')[0] || 'bin';
+              const prefix = type.startsWith('image/') ? 'pasted_image'
+                : type.startsWith('video/') ? 'pasted_video'
+                : type.startsWith('audio/') ? 'pasted_audio'
+                : 'pasted_file';
+              const file = new File([blob], `${prefix}_${Date.now()}.${ext}`, { type });
+              files.push(file);
+            } catch (blobErr) {
+              // Some types may not be readable — skip silently
+              console.warn(`Could not read clipboard type: ${type}`, blobErr);
+            }
           }
         }
       }
