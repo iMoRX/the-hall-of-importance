@@ -338,20 +338,26 @@ export default function App() {
   const handlePasteNewNote = async () => {
     try {
       const clipboardItems = await navigator.clipboard.read();
-      let text = '';
+      let bodyHtml = '';
       const files = [];
 
       for (const clipboardItem of clipboardItems) {
-        for (const type of clipboardItem.types) {
-          if (type === 'text/plain') {
-            const blob = await clipboardItem.getType(type);
-            text += await blob.text() + '\n';
-          } else if (type === 'text/html') {
-            // Capture rich text as HTML body
-            const blob = await clipboardItem.getType(type);
-            const html = await blob.text();
-            if (html) text = html;
-          } else {
+        const types = clipboardItem.types;
+        
+        if (types.includes('text/html')) {
+          const blob = await clipboardItem.getType('text/html');
+          const html = await blob.text();
+          if (html) bodyHtml += html;
+        } else if (types.includes('text/plain')) {
+          const blob = await clipboardItem.getType('text/plain');
+          const text = await blob.text();
+          if (text) {
+            bodyHtml += `<p>${text.trim().replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`;
+          }
+        }
+
+        for (const type of types) {
+          if (type !== 'text/plain' && type !== 'text/html') {
             // Treat any other type (image/*, video/*, audio/*, application/pdf, etc.) as a file
             try {
               const blob = await clipboardItem.getType(type);
@@ -370,9 +376,9 @@ export default function App() {
         }
       }
 
-      if (text || files.length > 0) {
+      if (bodyHtml || files.length > 0) {
         setEditorNote(null);
-        setEditorInitialBody(text.trim());
+        setEditorInitialBody(bodyHtml);
         setEditorInitialFiles(files);
         setEditorOpen(true);
       } else {
@@ -385,7 +391,7 @@ export default function App() {
         const text = await navigator.clipboard.readText();
         if (text) {
           setEditorNote(null);
-          setEditorInitialBody(text);
+          setEditorInitialBody(`<p>${text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`);
           setEditorInitialFiles([]);
           setEditorOpen(true);
         } else {
