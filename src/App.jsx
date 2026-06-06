@@ -10,10 +10,16 @@ import Sidebar from './components/Sidebar';
 import SearchBar from './components/SearchBar';
 import NoteGrid from './components/NoteGrid';
 import NoteEditor from './components/NoteEditor';
+import NoteDisplay from './components/NoteDisplay';
 import SpaceEditor from './components/SpaceEditor';
 import ReviewQueue from './components/ReviewQueue';
 import QuickCapture from './components/QuickCapture';
 import ConfirmDialog from './components/ConfirmDialog';
+import VaultGate, { hasVaultPin } from './components/VaultGate';
+
+const VAULT_SPACE_NAME = '🔒 Vault';
+const VAULT_SPACE_COLOR = 'hsl(45, 80%, 55%)';
+const VAULT_SPACE_ICON = 'Star';
 
 export default function App() {
   // --- Global state ---
@@ -31,6 +37,15 @@ export default function App() {
   const [reviewQueueOpen, setReviewQueueOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState(null);
 
+  // Display mode state
+  const [displayNote, setDisplayNote] = useState(null);
+  const [displayOpen, setDisplayOpen] = useState(false);
+
+  // Vault state
+  const [isVaultUnlocked, setIsVaultUnlocked] = useState(false);
+  const [vaultGateOpen, setVaultGateOpen] = useState(false);
+  const [vaultSpaceId, setVaultSpaceId] = useState(null);
+
   // Drag & drop state
   const [isDragOver, setIsDragOver] = useState(false);
   const dragCounterRef = useRef(0);
@@ -42,12 +57,51 @@ export default function App() {
     includeDeleted: activeSpaceId === 'trash',
   });
   const trashNotes = useNotes(null, { includeDeleted: true });
-  const allTags = useAllTags(activeSpaceId === 'trash' ? null : activeSpaceId);
+  const allTags = useAllTags(activeSpaceId === 'trash' ? null : activeSpaceId, {
+    vaultSpaceId,
+    isVaultUnlocked,
+  });
   const noteCounts = useNoteCounts();
   const { query, results, search, clearSearch, searchRef } = useSearch();
   const { expiringSoon, expiringSoonCount } = useExpiryCheck();
 
   const { session } = useAuth();
+
+  // --- Find or create vault space ---
+  useEffect(() => {
+    if (spaces.length > 0) {
+      const existing = spaces.find((s) => s.name === VAULT_SPACE_NAME);
+      if (existing) {
+        setVaultSpaceId(existing.id);
+      }
+    }
+  }, [spaces]);
+
+  const ensureVaultSpace = useCallback(async () => {
+    if (vaultSpaceId) return vaultSpaceId;
+
+    // Check if it already exists
+    const existing = spaces.find((s) => s.name === VAULT_SPACE_NAME);
+    if (existing) {
+      setVaultSpaceId(existing.id);
+      return existing.id;
+    }
+
+    // Create the vault space
+    const result = await addSpace({
+      name: VAULT_SPACE_NAME,
+      color: VAULT_SPACE_COLOR,
+      icon: VAULT_SPACE_ICON,
+    });
+    if (result?.id) {
+      setVaultSpaceId(result.id);
+      return result.id;
+    }
+    return null;
+  }, [vaultSpaceId, spaces, addSpace]);
+
+  // Vault note count
+  const vaultNoteCount = vaultSpaceId ? (noteCounts[vaultSpaceId] || 0) : 0;
 
   // --- iOS Shortcut / URL parameter support ---
   useEffect(() => {
@@ -193,7 +247,7 @@ export default function App() {
     return () => document.removeEventListener('paste', handlePaste);
   }, [editorOpen]);
 
-  // --- Filter notes by active tag and search ---
+  // --- Filter notes by active tag, search, and vault ---
   const getDisplayNotes = useCallback(() => {
     if (activeSpaceId === 'trash') {
       return notes;
@@ -201,12 +255,17 @@ export default function App() {
 
     let displayed = results !== null ? results : notes;
 
+    // If not viewing vault and vault is locked, filter out vault notes
+    if (!isVaultUnlocked && vaultSpaceId && activeSpaceId !== vaultSpaceId) {
+      displayed = displayed.filter((n) => n.spaceId !== vaultSpaceId);
+    }
+
     if (activeTag) {
       displayed = displayed.filter((n) => n.tags?.includes(activeTag));
     }
 
     return displayed;
-  }, [notes, results, activeTag, activeSpaceId]);
+  }, [notes, results, activeTag, activeSpaceId, isVaultUnlocked, vaultSpaceId]);
 
   const displayedNotes = getDisplayNotes();
 
@@ -240,6 +299,7 @@ export default function App() {
   // --- Get current view title ---
   const getViewTitle = () => {
     if (activeSpaceId === 'trash') return 'Trash';
+    if (activeSpaceId === vaultSpaceId) return '🔒 Vault';
     if (activeSpaceId) {
       const space = spaces.find((s) => s.id === activeSpaceId);
       return space?.name || 'Notes';
@@ -248,8 +308,20 @@ export default function App() {
   };
 
   // --- Handlers ---
+
+  // Display mode: clicking a note opens display modal
   const handleNoteClick = (note) => {
     if (activeSpaceId === 'trash') return;
+    setDisplayNote(note);
+    setDisplayOpen(true);
+  };
+
+  // Edit mode: clicking pen icon opens editor directly
+  const handleEditNote = (note) => {
+    // Close display modal if open
+    setDisplayOpen(false);
+    setDisplayNote(null);
+    // Open editor
     setEditorNote(note);
     setEditorInitialBody('');
     setEditorInitialFiles([]);
@@ -265,18 +337,48 @@ export default function App() {
 
   const handlePasteNewNote = async () => {
     try {
-      const text = await navigator.clipboard.readText();
-      if (text) {
+      const clipboardItems = await navigator.clipboard.read();
+      let text = '';
+      const files = [];
+
+      for (const clipboardItem of clipboardItems) {
+        for (const type of clipboardItem.types) {
+          if (type.startsWith('image/')) {
+            const blob = await clipboardItem.getType(type);
+            const ext = type.split('/')[1] || 'png';
+            const file = new File([blob], `pasted_image_${Date.now()}.${ext}`, { type });
+            files.push(file);
+          } else if (type === 'text/plain') {
+            const blob = await clipboardItem.getType(type);
+            text += await blob.text() + '\n';
+          }
+        }
+      }
+
+      if (text || files.length > 0) {
         setEditorNote(null);
-        setEditorInitialBody(text);
-        setEditorInitialFiles([]);
+        setEditorInitialBody(text.trim());
+        setEditorInitialFiles(files);
         setEditorOpen(true);
       } else {
-        alert("Clipboard is empty or does not contain text.");
+        alert("Clipboard is empty or does not contain supported text/images.");
       }
     } catch (err) {
-      console.error("Failed to read clipboard: ", err);
-      alert("Failed to read clipboard. You may need to grant permission.");
+      console.error("Failed to read rich clipboard: ", err);
+      // Fallback for browsers/contexts that only support text
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          setEditorNote(null);
+          setEditorInitialBody(text);
+          setEditorInitialFiles([]);
+          setEditorOpen(true);
+        } else {
+          alert("Clipboard is empty.");
+        }
+      } catch (fallbackErr) {
+        alert("Failed to read clipboard. You may need to grant permission in your browser settings.");
+      }
     }
   };
 
@@ -291,6 +393,8 @@ export default function App() {
 
   const handleDeleteNote = (noteId) => {
     setEditorOpen(false);
+    setDisplayOpen(false);
+    setDisplayNote(null);
     setConfirmDialog({
       title: 'Delete Note',
       message: 'This note will be moved to trash. You can restore it within 7 days.',
@@ -363,8 +467,45 @@ export default function App() {
     setSidebarOpen(false);
   };
 
+  // --- Vault handlers ---
+  const handleVaultClick = async () => {
+    if (isVaultUnlocked) {
+      // Already unlocked — navigate to vault space
+      const id = await ensureVaultSpace();
+      if (id) {
+        handleSpaceSelect(id);
+      }
+    } else {
+      // Show vault gate
+      setVaultGateOpen(true);
+    }
+  };
+
+  const handleVaultUnlock = async () => {
+    setIsVaultUnlocked(true);
+    setVaultGateOpen(false);
+    const id = await ensureVaultSpace();
+    if (id) {
+      handleSpaceSelect(id);
+    }
+  };
+
+  const handleTogglePin = async (noteId) => {
+    await togglePin(noteId);
+    // Update display note if it's the same note
+    if (displayNote && displayNote.id === noteId) {
+      setDisplayNote((prev) => prev ? { ...prev, isPinned: !prev.isPinned } : null);
+    }
+  };
+
   // Trash count
   const trashCount = trashNotes.notes?.length || 0;
+
+  // Compute note counts excluding vault when locked
+  const adjustedNoteCounts = { ...noteCounts };
+  if (!isVaultUnlocked && vaultSpaceId && noteCounts[vaultSpaceId]) {
+    adjustedNoteCounts.all = (noteCounts.all || 0) - (noteCounts[vaultSpaceId] || 0);
+  }
 
   return (
     <div className="app-layout">
@@ -375,7 +516,7 @@ export default function App() {
         allTags={allTags}
         activeTag={activeTag}
         onTagSelect={setActiveTag}
-        noteCounts={noteCounts}
+        noteCounts={adjustedNoteCounts}
         expiringSoonCount={expiringSoonCount}
         onOpenReviewQueue={() => setReviewQueueOpen(true)}
         onOpenSpaceEditor={(space) => {
@@ -385,6 +526,10 @@ export default function App() {
         trashCount={trashCount}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        vaultSpaceId={vaultSpaceId}
+        isVaultUnlocked={isVaultUnlocked}
+        vaultNoteCount={vaultNoteCount}
+        onVaultClick={handleVaultClick}
       />
 
       <div className="main">
@@ -458,6 +603,7 @@ export default function App() {
               notes={enrichedNotes}
               spaces={spaces}
               onNoteClick={handleNoteClick}
+              onEditClick={handleEditNote}
             />
           )}
         </div>
@@ -477,6 +623,21 @@ export default function App() {
       {/* Floating Action Button */}
       {activeSpaceId !== 'trash' && (
         <QuickCapture onClick={handleNewNote} onPasteClick={handlePasteNewNote} />
+      )}
+
+      {/* Note Display Modal (read-only) */}
+      {displayOpen && displayNote && (
+        <NoteDisplay
+          note={displayNote}
+          spaces={spaces}
+          onEdit={handleEditNote}
+          onDelete={handleDeleteNote}
+          onClose={() => {
+            setDisplayOpen(false);
+            setDisplayNote(null);
+          }}
+          onTogglePin={handleTogglePin}
+        />
       )}
 
       {/* Note Editor Modal */}
@@ -519,6 +680,15 @@ export default function App() {
           onKeepForever={keepForever}
           onDelete={deleteNote}
           onClose={() => setReviewQueueOpen(false)}
+        />
+      )}
+
+      {/* Vault Gate */}
+      {vaultGateOpen && (
+        <VaultGate
+          isSetup={!hasVaultPin()}
+          onUnlock={handleVaultUnlock}
+          onClose={() => setVaultGateOpen(false)}
         />
       )}
 

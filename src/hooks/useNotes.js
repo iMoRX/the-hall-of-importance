@@ -158,24 +158,26 @@ export function useNotes(spaceId = null, { includeDeleted = false } = {}) {
   };
 }
 
-export function useAllTags(spaceId = null) {
+export function useAllTags(spaceId = null, { vaultSpaceId = null, isVaultUnlocked = false } = {}) {
   const { session } = useAuth();
   const [tags, setTags] = useState([]);
 
   const fetchTags = useCallback(async () => {
     if (!session?.user?.id) return;
-    let query = supabase.from('notes').select('tags').eq('is_deleted', false);
+    let query = supabase.from('notes').select('tags, space_id').eq('is_deleted', false);
     if (spaceId) query = query.eq('space_id', spaceId);
 
     const { data, error } = await query;
     if (!error && data) {
       const tagSet = new Set();
       data.forEach(n => {
+        // Skip vault note tags when vault is locked
+        if (!isVaultUnlocked && vaultSpaceId && n.space_id === vaultSpaceId) return;
         if (n.tags) n.tags.forEach(t => tagSet.add(t));
       });
       setTags(Array.from(tagSet).sort());
     }
-  }, [session?.user?.id, spaceId]);
+  }, [session?.user?.id, spaceId, vaultSpaceId, isVaultUnlocked]);
 
   useEffect(() => {
     fetchTags();

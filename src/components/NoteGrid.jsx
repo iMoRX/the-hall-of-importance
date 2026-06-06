@@ -5,7 +5,7 @@ import { FileText } from 'lucide-react';
 /**
  * Responsive grid of note cards with empty state.
  */
-export default function NoteGrid({ notes, spaces, onNoteClick }) {
+export default function NoteGrid({ notes, spaces, onNoteClick, onEditClick }) {
   // Build a quick lookup for space colors
   const spaceColorMap = {};
   spaces.forEach((s) => {
@@ -32,6 +32,7 @@ export default function NoteGrid({ notes, spaces, onNoteClick }) {
           note={note}
           spaceColor={spaceColorMap[note.spaceId]}
           onClick={onNoteClick}
+          onEditClick={onEditClick}
         />
       ))}
     </div>

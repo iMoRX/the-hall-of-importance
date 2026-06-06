@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Layers, Trash2, AlertTriangle, Plus, Settings,
+  Layers, Trash2, AlertTriangle, Plus, Settings, Lock, Unlock,
   GraduationCap, Briefcase, Heart, Home, Star,
   BookOpen, Code, Music, Plane, Dumbbell,
   Camera, ShoppingBag, Palette, Gamepad2, Stethoscope,
@@ -13,7 +13,7 @@ const ICON_MAP = {
 };
 
 /**
- * Left sidebar with spaces, tags, expiry warnings, and trash.
+ * Left sidebar with spaces, tags, vault, expiry warnings, and trash.
  */
 export default function Sidebar({
   spaces,
@@ -29,6 +29,11 @@ export default function Sidebar({
   trashCount,
   isOpen,
   onClose,
+  // Vault props
+  vaultSpaceId,
+  isVaultUnlocked,
+  vaultNoteCount,
+  onVaultClick,
 }) {
   return (
     <>
@@ -72,36 +77,38 @@ export default function Sidebar({
               <span className="sidebar__item-count">{noteCounts.all || 0}</span>
             </button>
 
-            {/* Individual spaces */}
-            {spaces.map((space) => {
-              const IconComponent = ICON_MAP[space.icon] || Star;
-              return (
-                <div
-                  key={space.id}
-                  className="sidebar__item-row"
-                >
-                  <button
-                    className={`sidebar__item ${activeSpaceId === space.id ? 'sidebar__item--active' : ''}`}
-                    onClick={() => onSpaceSelect(space.id)}
-                    id={`sidebar-space-${space.id}`}
+            {/* Individual spaces (exclude vault space) */}
+            {spaces
+              .filter((s) => s.id !== vaultSpaceId)
+              .map((space) => {
+                const IconComponent = ICON_MAP[space.icon] || Star;
+                return (
+                  <div
+                    key={space.id}
+                    className="sidebar__item-row"
                   >
-                    <span className="sidebar__item-dot" style={{ backgroundColor: space.color }} />
-                    <span className="sidebar__item-name">{space.name}</span>
-                    <span className="sidebar__item-count">{noteCounts[space.id] || 0}</span>
-                  </button>
-                  <button
-                    className="sidebar__item-edit"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenSpaceEditor(space);
-                    }}
-                    title={`Edit ${space.name}`}
-                  >
-                    <Settings size={13} />
-                  </button>
-                </div>
-              );
-            })}
+                    <button
+                      className={`sidebar__item ${activeSpaceId === space.id ? 'sidebar__item--active' : ''}`}
+                      onClick={() => onSpaceSelect(space.id)}
+                      id={`sidebar-space-${space.id}`}
+                    >
+                      <span className="sidebar__item-dot" style={{ backgroundColor: space.color }} />
+                      <span className="sidebar__item-name">{space.name}</span>
+                      <span className="sidebar__item-count">{noteCounts[space.id] || 0}</span>
+                    </button>
+                    <button
+                      className="sidebar__item-edit"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenSpaceEditor(space);
+                      }}
+                      title={`Edit ${space.name}`}
+                    >
+                      <Settings size={13} />
+                    </button>
+                  </div>
+                );
+              })}
 
             {/* Add space button */}
             <button
@@ -111,6 +118,28 @@ export default function Sidebar({
             >
               <Plus size={14} />
               <span>Add Space</span>
+            </button>
+          </div>
+
+          {/* Vault */}
+          <div className="sidebar__section">
+            <div className="sidebar__section-label">Vault</div>
+            <button
+              className={`sidebar__item sidebar__item--vault ${
+                activeSpaceId === vaultSpaceId ? 'sidebar__item--active' : ''
+              }`}
+              onClick={onVaultClick}
+              id="sidebar-vault"
+            >
+              <span className="sidebar__item-icon" style={{ color: isVaultUnlocked ? 'var(--success)' : 'var(--warning)' }}>
+                {isVaultUnlocked ? <Unlock size={16} /> : <Lock size={16} />}
+              </span>
+              <span className="sidebar__item-name">
+                {isVaultUnlocked ? 'Vault (Unlocked)' : 'Vault'}
+              </span>
+              {isVaultUnlocked && vaultNoteCount > 0 && (
+                <span className="sidebar__item-count">{vaultNoteCount}</span>
+              )}
             </button>
           </div>
 

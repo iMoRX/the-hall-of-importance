@@ -1,12 +1,13 @@
 import React from 'react';
-import { Pin, Paperclip } from 'lucide-react';
+import { Pin, Paperclip, Edit3 } from 'lucide-react';
 import ExpiryBadge from './ExpiryBadge';
 import { stripHtml, formatDate } from '../utils/helpers';
 
 /**
  * Individual note card with glassmorphism effect.
+ * Click opens display mode; pen icon opens edit mode.
  */
-export default function NoteCard({ note, spaceColor, onClick }) {
+export default function NoteCard({ note, spaceColor, onClick, onEditClick }) {
   const bodyPreview = stripHtml(note.body);
 
   return (
@@ -22,6 +23,21 @@ export default function NoteCard({ note, spaceColor, onClick }) {
           background: linear-gradient(90deg, ${spaceColor || 'var(--accent)'}, ${spaceColor || 'var(--accent-hover)'});
         }
       `}</style>
+
+      {/* Edit icon overlay */}
+      {onEditClick && (
+        <button
+          className="note-card__edit-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEditClick(note);
+          }}
+          title="Edit note"
+          id={`note-card-edit-${note.id}`}
+        >
+          <Edit3 size={14} />
+        </button>
+      )}
 
       <div className="note-card__header">
         <h3 className="note-card__title">{note.title || 'Untitled'}</h3>

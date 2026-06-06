@@ -334,7 +334,7 @@ export default function NoteEditor({
               <label className="field__label">Space</label>
               <select
                 value={spaceId}
-                onChange={(e) => setSpaceId(Number(e.target.value))}
+                onChange={(e) => setSpaceId(e.target.value)}
                 id="note-space-select"
               >
                 {spaces.map((s) => (

@@ -1597,3 +1597,365 @@ h1, h2, h3, h4, h5, h6,
     padding: var(--space-3);
   }
 }
+
+/* ============================
+   NOTE DISPLAY (Read-Only)
+   ============================ */
+.note-display-modal {
+  max-width: 720px;
+}
+
+.note-display__header-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+}
+
+.note-display__space-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--badge-color, var(--accent));
+  background: color-mix(in srgb, var(--badge-color, var(--accent)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--badge-color, var(--accent)) 25%, transparent);
+  white-space: nowrap;
+}
+
+.note-display__body {
+  gap: var(--space-4) !important;
+}
+
+.note-display__title {
+  font-family: var(--font-serif);
+  font-size: var(--font-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.note-display__dates {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.note-display__date {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.note-display__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.note-display__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-xs);
+  font-weight: 500;
+  color: var(--accent-text);
+  background: var(--accent-muted);
+}
+
+.note-display__content {
+  font-size: var(--font-sm);
+  line-height: 1.75;
+  color: var(--text-primary);
+  padding: var(--space-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  min-height: 80px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.note-display__content h1 { font-size: var(--font-xl); font-weight: 700; margin: var(--space-4) 0 var(--space-2); }
+.note-display__content h2 { font-size: var(--font-lg); font-weight: 700; margin: var(--space-3) 0 var(--space-2); }
+.note-display__content h3 { font-size: var(--font-md); font-weight: 600; margin: var(--space-3) 0 var(--space-2); }
+.note-display__content p { margin-bottom: var(--space-2); }
+.note-display__content ul,
+.note-display__content ol { padding-left: var(--space-6); margin-bottom: var(--space-2); }
+.note-display__content li { margin-bottom: var(--space-1); }
+.note-display__content blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: var(--space-4);
+  color: var(--text-secondary);
+  font-style: italic;
+  margin: var(--space-3) 0;
+}
+.note-display__content code {
+  background: var(--bg-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.note-display__content pre {
+  background: var(--bg-primary);
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  margin: var(--space-3) 0;
+  overflow-x: auto;
+}
+.note-display__content pre code {
+  background: none;
+  padding: 0;
+}
+.note-display__content a {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-decoration-color: var(--accent-muted);
+}
+.note-display__content strong { font-weight: 700; }
+.note-display__content em { font-style: italic; }
+.note-display__content u { text-decoration: underline; }
+.note-display__content s { text-decoration: line-through; color: var(--text-tertiary); }
+.note-display__content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: var(--space-4) 0;
+}
+
+.note-display__empty {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.note-display__files {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.note-display__files-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.file-item--display {
+  cursor: default;
+}
+
+.file-item__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.file-item__action:hover {
+  color: var(--accent-text);
+  background: var(--accent-muted);
+}
+
+.note-display__loading {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  font-style: italic;
+  padding: var(--space-2) 0;
+}
+
+/* ============================
+   NOTE CARD — Edit Icon Overlay
+   ============================ */
+.note-card__edit-btn {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  color: var(--text-tertiary);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: all var(--transition-fast);
+  z-index: 2;
+  cursor: pointer;
+}
+
+.note-card:hover .note-card__edit-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.note-card__edit-btn:hover {
+  color: var(--accent-text);
+  background: var(--accent-muted);
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================
+   VAULT GATE (PIN Entry)
+   ============================ */
+.vault-modal {
+  transition: all var(--transition-base);
+}
+
+.vault-modal--unlocking {
+  animation: vaultUnlock 600ms ease forwards;
+}
+
+@keyframes vaultUnlock {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0; }
+}
+
+.vault-gate__body {
+  align-items: center;
+  text-align: center;
+}
+
+.vault-gate__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--warning-muted);
+  color: var(--warning);
+  margin-bottom: var(--space-2);
+  transition: all var(--transition-base);
+}
+
+.vault-gate__icon--unlocked {
+  background: var(--success-muted);
+  color: var(--success);
+  animation: shieldPop 400ms ease;
+}
+
+@keyframes shieldPop {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.vault-gate__shield {
+  animation: shieldGlow 600ms ease;
+}
+
+@keyframes shieldGlow {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50% { filter: drop-shadow(0 0 12px var(--success)); }
+}
+
+.vault-gate__subtitle {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.vault-pin__inputs {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+  margin: var(--space-4) 0;
+}
+
+.vault-pin__digit {
+  width: 52px !important;
+  height: 60px;
+  text-align: center;
+  font-size: var(--font-xl);
+  font-weight: 700;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+  caret-color: var(--accent);
+}
+
+.vault-pin__digit:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-muted), var(--shadow-sm);
+  transform: translateY(-2px);
+}
+
+.vault-gate__toggle-vis {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  transition: color var(--transition-fast);
+  cursor: pointer;
+}
+
+.vault-gate__toggle-vis:hover {
+  color: var(--text-primary);
+}
+
+.vault-gate__error {
+  font-size: var(--font-sm);
+  color: var(--danger);
+  background: var(--danger-muted);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  animation: fadeIn 200ms ease;
+}
+
+.vault-gate__submit {
+  width: 100%;
+  margin-top: var(--space-2);
+  height: 44px;
+  font-size: var(--font-base);
+}
+
+.vault-gate__back {
+  width: 100%;
+  font-size: var(--font-sm);
+}
+
+/* Vault sidebar item */
+.sidebar__item--vault {
+  position: relative;
+}
+
+.sidebar__item--vault::after {
+  content: '';
+  position: absolute;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: -2px;
+  height: 1px;
+  background: var(--border);
+}
